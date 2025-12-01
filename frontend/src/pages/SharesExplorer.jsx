@@ -258,8 +258,8 @@ const SharesExplorer = () => {
   const currentStatus = loadingStatus['current'];
   
   // Calculate progress percentage
-  const progressPercentage = prodStatus?.isLoading && prodStatus.totalCatalogs > 0
-    ? (prodStatus.catalogsProcessed / prodStatus.totalCatalogs) * 100
+  const progressPercentage = currentStatus?.isLoading && currentStatus.totalCatalogs > 0
+    ? (currentStatus.catalogsProcessed / currentStatus.totalCatalogs) * 100
     : 0;
 
   return (
@@ -274,14 +274,14 @@ const SharesExplorer = () => {
         </Typography>
         
         {/* Loading Progress */}
-        {isAnyLoading && prodStatus && (
+        {isAnyLoading && currentStatus && (
           <Box sx={{ mt: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
               <Typography variant="caption" color="text.secondary">
-                Loading assets... [{prodStatus.catalogsProcessed}/{prodStatus.totalCatalogs} catalogs]
+                Loading assets... [{currentStatus.catalogsProcessed}/{currentStatus.totalCatalogs} catalogs]
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {prodStatus.currentAssetCount || 0}+ assets found
+                {currentStatus.currentAssetCount || 0}+ assets found
               </Typography>
             </Box>
             <LinearProgress 
