@@ -257,6 +257,14 @@ router.get('/shares', async (req, res) => {
         }
       } catch (error) {
         console.error(`Error fetching catalogs from ${env.id}:`, error.message);
+        if (error.response) {
+          console.error(`  Status: ${error.response.status}`);
+          console.error(`  Data: ${JSON.stringify(error.response.data)}`);
+          if (error.response.status === 403) {
+            console.error(`  ⚠️  403 Forbidden - The user token may not have Unity Catalog permissions.`);
+            console.error(`  ⚠️  Add 'unity-catalog' or 'all-apis' scope to your Databricks App.`);
+          }
+        }
       }
     }
     
