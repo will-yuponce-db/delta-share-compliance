@@ -7,11 +7,10 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
-    "build": "echo 'Frontend is pre-built in frontend/dist'",
-    "build:local": "cd frontend && npm run build",
+    "build": "cd frontend && npm run build",
     "start": "node backend/server.js",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "postinstall": "cd backend && npm install"
+    "postinstall": "cd frontend && npm install --include=dev && cd ../backend && npm install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
