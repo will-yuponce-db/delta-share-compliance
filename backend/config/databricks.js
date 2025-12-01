@@ -87,8 +87,16 @@ export const getEnvironment = (envId) => {
 // Extract user token from request headers (Databricks Apps authorization)
 export const getUserToken = (req) => {
   // Get token from X-Forwarded-Access-Token header (Databricks Apps)
+  // Note: Header names are lowercased by Express
   const forwardedToken = req.headers['x-forwarded-access-token'];
+  
+  // Debug: log all headers to see what's available
+  if (!forwardedToken) {
+    console.log('🔍 Available headers:', Object.keys(req.headers).filter(h => h.includes('forward') || h.includes('auth')));
+  }
+  
   if (forwardedToken) {
+    console.log(`🔑 Got forwarded token: ${forwardedToken.substring(0, 30)}...`);
     return forwardedToken;
   }
   

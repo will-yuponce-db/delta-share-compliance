@@ -81,6 +81,12 @@ export const createDatabricksClient = (envId, userToken = null) => {
   // Priority: 1) Provided userToken, 2) Current user token from middleware, 3) PAT from config
   const token = userToken || currentUserToken || env.token;
   
+  // Debug logging
+  console.log(`🔧 Creating Databricks client for env: ${envId}`);
+  console.log(`   Host: ${env.host}`);
+  console.log(`   Token source: ${userToken ? 'provided' : currentUserToken ? 'middleware' : env.token ? 'config' : 'none'}`);
+  console.log(`   Token preview: ${token ? token.substring(0, 20) + '...' : 'null'}`);
+  
   if (!token) {
     throw new Error('No authentication token available. Either configure a PAT in databricks-config.json or access via Databricks Apps.');
   }
