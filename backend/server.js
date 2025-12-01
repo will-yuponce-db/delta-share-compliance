@@ -114,8 +114,15 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Delta Sharing Compliance API server running on http://localhost:${PORT}`);
-  console.log(`📊 API Documentation available at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  const appUrl = process.env.DATABRICKS_APP_URL || `http://localhost:${PORT}`;
+  const databricksHost = process.env.DATABRICKS_HOST;
+  
+  console.log(`🚀 Delta Sharing Compliance API server running on port ${PORT}`);
+  console.log(`🌐 App URL: ${appUrl}`);
+  if (databricksHost) {
+    console.log(`🔗 Databricks Host: ${databricksHost}`);
+    console.log(`📱 App Name: ${process.env.DATABRICKS_APP_NAME || 'unknown'}`);
+  }
   console.log(`🔐 Auth: User token from X-Forwarded-Access-Token, falls back to PAT from config`);
 });
