@@ -72,7 +72,7 @@ const RemediationPage = () => {
       const [shareId, schemaName, assetName] = parts;
       
       await updateAssetTags(
-        selectedViolation.environmentId || 'prod',
+        selectedViolation.environmentId || 'current',
         shareId,
         schemaName,
         assetName,

@@ -49,7 +49,7 @@ const AgreementsPage = () => {
     shareName: '',  // The share this agreement applies to
     agreementText: '',
     description: '',
-    environments: ['prod'], // Default to prod environment
+    environments: ['current'], // Default to prod environment
     selectedAssets: [], // Array of selected assets with scope: { type: 'catalog|schema|table|column', fullName }
     retentionYears: '', // Retention policy applies to all assets
     requiredTags: [{ key: '', value: '' }],
@@ -109,7 +109,7 @@ const AgreementsPage = () => {
     setLoadingAssets(true);
     try {
       const { getTablesInShare } = await import('../services/shareService');
-      const assets = await getTablesInShare('prod', share.name);
+      const assets = await getTablesInShare('current', share.name);
       
       // Organize by schema
       const schemaMap = new Map();
@@ -303,7 +303,7 @@ const AgreementsPage = () => {
         setLoadingColumns({ ...loadingColumns, [key]: true });
         try {
           const { getTableMetadata } = await import('../services/shareService');
-          const metadata = await getTableMetadata('prod', table.fullName);
+          const metadata = await getTableMetadata('current', table.fullName);
           setTableColumnsMap({
             ...tableColumnsMap,
             [key]: metadata.columns || [],
@@ -391,7 +391,7 @@ const AgreementsPage = () => {
         shareName: '',
         agreementText: '',
         description: '',
-        environments: ['prod'],
+        environments: ['current'],
         selectedAssets: [],
         retentionYears: '',
         requiredTags: [{ key: '', value: '' }],
@@ -411,7 +411,7 @@ const AgreementsPage = () => {
       shareName: '',
       agreementText: '',
       description: '',
-      environments: ['prod'],
+      environments: ['current'],
       selectedAssets: [],
       retentionYears: '',
       requiredTags: [{ key: '', value: '' }],
@@ -450,7 +450,7 @@ const AgreementsPage = () => {
       shareName: agreement.shares?.[0] || '',
       agreementText: agreement.content || '',
       description: agreement.description || '',
-      environments: agreement.environments || ['prod'],
+      environments: agreement.environments || ['current'],
       selectedAssets: formattedAssets,
       retentionYears: agreement.retentionYears || '',
       requiredTags: agreement.requiredTags && agreement.requiredTags.length > 0 
@@ -649,7 +649,7 @@ const AgreementsPage = () => {
             
             <Autocomplete
               fullWidth
-              options={shares.filter(s => s.environmentId === 'prod')}
+              options={shares.filter(s => s.environmentId === 'current')}
               getOptionLabel={(option) => typeof option === 'string' ? option : option.name}
               value={shares.find(s => s.name === newAgreement.shareName) || null}
               onChange={(e, newValue) => {

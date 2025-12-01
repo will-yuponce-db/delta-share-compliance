@@ -582,7 +582,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
     // Test 1: Unity Catalog Shares API
     try {
       console.log(`\n1️⃣  Testing: GET /api/2.1/unity-catalog/shares/${shareName}?include_shared_data=true`);
-      const shareDetails = await deltaSharing.getShare('prod', shareName, true);
+      const shareDetails = await deltaSharing.getShare('current', shareName, true);
       console.log(`   ✅ Success! Response structure:`);
       console.log(`      - name: ${shareDetails.name}`);
       console.log(`      - comment: ${shareDetails.comment || '(none)'}`);
@@ -603,7 +603,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
       // Try to get share permissions/objects
       try {
         console.log(`   📋 Checking share permissions (recipients)...`);
-        const shareObjects = await deltaSharing.listShareObjects('prod', shareName);
+        const shareObjects = await deltaSharing.listShareObjects('current', shareName);
         if (shareObjects) {
           console.log(`      Recipients: ${shareObjects.privilege_assignments?.length || 0}`);
           results.apis.shareRecipients = {
@@ -618,7 +618,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
       // Try to get what tables are granted TO this share
       try {
         console.log(`   📋 Checking what tables are granted to this share...`);
-        const shareGrants = await deltaSharing.listTablesInShare('prod', shareName);
+        const shareGrants = await deltaSharing.listTablesInShare('current', shareName);
         if (shareGrants) {
           console.log(`      Grants found:`, JSON.stringify(shareGrants, null, 2));
           results.apis.shareGrants = {
@@ -641,7 +641,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
     try {
       console.log(`\n1️⃣b Testing: Does a catalog named '${shareName}' exist?`);
       const { unityCatalog } = await import('../services/databricksClient.js');
-      const catalogs = await unityCatalog.listCatalogs('prod');
+      const catalogs = await unityCatalog.listCatalogs('current');
       const matchingCatalog = catalogs.find(c => c.name === shareName);
       
       if (matchingCatalog) {
@@ -658,7 +658,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
         // If catalog exists, try to list its tables
         try {
           console.log(`   📋 Listing tables in catalog ${shareName}...`);
-          const allAssets = await deltaSharing.getAllShareTables('prod');
+          const allAssets = await deltaSharing.getAllShareTables('current');
           const catalogTables = allAssets.filter(a => a.catalog_name === shareName);
           console.log(`      Found ${catalogTables.length} tables/assets`);
           if (catalogTables.length > 0) {
@@ -691,7 +691,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
     // Test 2: List providers (to find the right provider for the share)
     try {
       console.log(`\n2️⃣  Testing: GET /api/2.1/data-sharing/providers`);
-      const providers = await deltaSharing.listProviders('prod');
+      const providers = await deltaSharing.listProviders('current');
       console.log(`   ✅ Found ${providers.length} providers`);
       if (providers.length > 0) {
         console.log(`      - Providers: ${providers.map(p => p.name).join(', ')}`);
@@ -708,7 +708,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
         for (const provider of providers.slice(0, 3)) { // Test first 3 providers
           try {
             console.log(`   Testing: GET /api/2.1/data-sharing/providers/${provider.name}/shares/${shareName}`);
-            const providerShare = await deltaSharing.getShareFromProvider('prod', provider.name, shareName);
+            const providerShare = await deltaSharing.getShareFromProvider('current', provider.name, shareName);
             if (providerShare) {
               console.log(`   ✅ Found share in provider: ${provider.name}`);
               console.log(`      - Share data:`, JSON.stringify(providerShare, null, 2));
@@ -747,7 +747,7 @@ router.get('/test-share-details/:shareName', async (req, res) => {
 // POST get accurate asset counts for specific shares
 router.post('/shares/asset-counts', async (req, res) => {
   try {
-    const { envId = 'prod', shareNames } = req.body;
+    const { envId = 'current', shareNames } = req.body;
     
     if (!shareNames || !Array.isArray(shareNames)) {
       return res.status(400).json({ error: 'shareNames array is required' });
@@ -771,7 +771,7 @@ router.post('/shares/asset-counts', async (req, res) => {
 router.get('/providers', async (req, res) => {
   try {
     const { deltaSharing } = await import('../services/databricksClient.js');
-    const providers = await deltaSharing.listProviders('prod');
+    const providers = await deltaSharing.listProviders('current');
     res.json(providers);
   } catch (error) {
     console.error('Error fetching providers:', error);
@@ -784,7 +784,7 @@ router.get('/providers/:providerName/shares/:shareName', async (req, res) => {
   try {
     const { providerName, shareName } = req.params;
     const { deltaSharing } = await import('../services/databricksClient.js');
-    const shareDetails = await deltaSharing.getShareFromProvider('prod', providerName, shareName);
+    const shareDetails = await deltaSharing.getShareFromProvider('current', providerName, shareName);
     
     if (!shareDetails) {
       return res.status(404).json({ error: 'Share not found or provider API not available' });

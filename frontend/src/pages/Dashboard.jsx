@@ -72,10 +72,10 @@ const Dashboard = () => {
   
   // Get loading progress message
   const getLoadingProgress = () => {
-    const prodStatus = loadingStatus['prod'];
-    if (!prodStatus || !prodStatus.isLoading) return null;
+    const currentStatus = loadingStatus['current'];
+    if (!currentStatus || !currentStatus.isLoading) return null;
     
-    const { catalogsProcessed, totalCatalogs, currentAssetCount } = prodStatus;
+    const { catalogsProcessed, totalCatalogs, currentAssetCount } = currentStatus;
     return `Loading... [${catalogsProcessed}/${totalCatalogs} shares, ${currentAssetCount || 0} assets so far]`;
   };
 
@@ -111,9 +111,9 @@ const Dashboard = () => {
     ? Math.round((complianceOverview.overall.compliantAssets / complianceOverview.overall.totalAssets) * 100)
     : 0;
 
-  const prodStatus = loadingStatus['prod'];
-  const totalAssetsText = prodStatus?.isLoading 
-    ? `${prodStatus.currentAssetCount || 0}+ (loading...)`
+  const currentStatus = loadingStatus['current'];
+  const totalAssetsText = currentStatus?.isLoading 
+    ? `${currentStatus.currentAssetCount || 0}+ (loading...)`
     : complianceOverview?.overall?.totalAssets || 0;
   
   const statCards = [

@@ -15,7 +15,7 @@ import { getAllAgreements } from '../data/agreementsStore.js';
  * @param {string} agreementId - Agreement ID to enforce
  * @param {string} envId - Environment ID
  */
-export async function enforceAgreement(agreementId, envId = 'prod') {
+export async function enforceAgreement(agreementId, envId = 'current') {
   const agreements = getAllAgreements();
   const agreement = agreements.find(a => a.id === agreementId);
 
@@ -142,7 +142,7 @@ export async function enforceAgreement(agreementId, envId = 'prod') {
 /**
  * Enforce all agreements
  */
-export async function enforceAllAgreements(envId = 'prod') {
+export async function enforceAllAgreements(envId = 'current') {
   const agreements = getAllAgreements();
   
   console.log(`🔒 Enforcing ${agreements.length} agreements`);

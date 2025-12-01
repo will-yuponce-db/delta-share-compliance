@@ -255,7 +255,7 @@ const SharesExplorer = () => {
 
   // Check if any environment is loading
   const isAnyLoading = Object.values(loadingStatus).some(status => status.isLoading);
-  const prodStatus = loadingStatus['prod'];
+  const currentStatus = loadingStatus['current'];
   
   // Calculate progress percentage
   const progressPercentage = prodStatus?.isLoading && prodStatus.totalCatalogs > 0

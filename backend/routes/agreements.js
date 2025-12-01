@@ -318,7 +318,7 @@ router.get('/', async (req, res) => {
     // Load from volume only ONCE on first request
     if (!volumeAgreementsLoaded) {
       console.log('📂 First request - loading agreements from volume...');
-      const volumeAgreements = await loadAllAgreementsFromVolume('prod');
+      const volumeAgreements = await loadAllAgreementsFromVolume('current');
       
       // Add volume agreements to in-memory store (only if not already there)
       volumeAgreements.forEach(volAgreement => {
@@ -492,9 +492,9 @@ router.post('/ingest-bulk', async (req, res) => {
     if (!shareNames) {
       console.log('📥 No shareNames provided, fetching all shares...');
       const { deltaSharing } = await import('../services/databricksClient.js');
-      const allShares = await deltaSharing.listShares(environment || 'prod');
+      const allShares = await deltaSharing.listShares(environment || 'current');
       shareNames = allShares.map(s => s.name);
-      environment = environment || 'prod';
+      environment = environment || 'current';
       console.log(`Found ${shareNames.length} shares to scan for agreements`);
     }
     
@@ -707,14 +707,14 @@ router.delete('/:id', async (req, res) => {
     if (agreement.sourceFile) {
       // Extract filename from sourceFile path
       const fileName = agreement.sourceFile.split('/').pop();
-      const envId = agreement.environments?.[0] || 'prod';
+      const envId = agreement.environments?.[0] || 'current';
       await deleteAgreementFromVolume(envId, fileName);
     } else if (agreement.volumePaths && agreement.volumePaths.length > 0) {
       // Delete all volume files for this agreement
       for (const volumePath of agreement.volumePaths) {
         if (volumePath.volumePath) {
           const fileName = volumePath.volumePath.split('/').pop();
-          const envId = volumePath.environment || agreement.environments?.[0] || 'prod';
+          const envId = volumePath.environment || agreement.environments?.[0] || 'current';
           await deleteAgreementFromVolume(envId, fileName);
         }
       }
@@ -888,7 +888,7 @@ router.post('/reset-registry', (req, res) => {
 router.post('/enforce/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { envId = 'prod' } = req.body;
+    const { envId = 'current' } = req.body;
 
     const result = await enforceAgreement(id, envId);
     
@@ -909,7 +909,7 @@ router.post('/enforce/:id', async (req, res) => {
 // POST enforce all agreements
 router.post('/enforce-all', async (req, res) => {
   try {
-    const { envId = 'prod' } = req.body;
+    const { envId = 'current' } = req.body;
 
     const result = await enforceAllAgreements(envId);
     
