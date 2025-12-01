@@ -25,7 +25,7 @@ async function loadAllAgreementsFromVolume(envId) {
   }
   
   try {
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     const volumeName = 'agreements';
     const catalogName = 'main';
     const schemaName = 'default';
@@ -120,7 +120,7 @@ async function loadAllAgreementsFromVolume(envId) {
 // Helper function to read agreement from consumed share volume
 async function readAgreementFromVolume(envId, shareName) {
   try {
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     const volumeName = 'agreements';
     const catalogName = 'main'; // Central location for all agreements
     const schemaName = 'default';
@@ -224,7 +224,7 @@ function parseAgreementContent(content) {
 // Helper function to save agreement to volume
 async function saveAgreementToVolume(envId, shareName, agreementData) {
   try {
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     const volumeName = 'agreements';
     const catalogName = 'main'; // Central location for all agreements
     const schemaName = 'default';
@@ -662,7 +662,7 @@ router.post('/ingest', async (req, res) => {
 // Helper function to delete agreement file from volume
 async function deleteAgreementFromVolume(envId, fileName) {
   try {
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     const volumeName = 'agreements';
     const catalogName = 'main';
     const schemaName = 'default';

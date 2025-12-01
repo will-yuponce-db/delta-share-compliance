@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
     }
     
     const envId = environments[0].id;
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     
     switch (action) {
       case 'create_volume':
@@ -61,7 +61,7 @@ router.get('/check', async (req, res) => {
     }
     
     const envId = environments[0].id;
-    const client = createDatabricksClient(envId);
+    const client = await createDatabricksClient(envId);
     
     try {
       // Try to access the agreements volume

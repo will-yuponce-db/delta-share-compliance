@@ -5,6 +5,59 @@ import { getEnvironment } from '../config/databricks.js';
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Service Principal token cache
+let spToken = null;
+let spTokenExpiry = 0;
+
+// Get OAuth token using Service Principal credentials
+async function getServicePrincipalToken(host) {
+  const clientId = process.env.DATABRICKS_CLIENT_ID;
+  const clientSecret = process.env.DATABRICKS_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
+    console.log('⚠️  No Service Principal credentials (DATABRICKS_CLIENT_ID/SECRET) available');
+    return null;
+  }
+  
+  // Return cached token if still valid (with 5 min buffer)
+  if (spToken && Date.now() < spTokenExpiry - 300000) {
+    return spToken;
+  }
+  
+  try {
+    console.log('🔐 Fetching OAuth token using Service Principal...');
+    const tokenUrl = `${host}/oidc/v1/token`;
+    
+    const response = await axios.post(tokenUrl, 
+      new URLSearchParams({
+        grant_type: 'client_credentials',
+        scope: 'all-apis',
+      }).toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        auth: {
+          username: clientId,
+          password: clientSecret,
+        },
+      }
+    );
+    
+    spToken = response.data.access_token;
+    spTokenExpiry = Date.now() + (response.data.expires_in * 1000);
+    console.log('✅ Got Service Principal OAuth token');
+    return spToken;
+  } catch (error) {
+    console.error('❌ Failed to get Service Principal token:', error.message);
+    if (error.response) {
+      console.error('   Status:', error.response.status);
+      console.error('   Data:', JSON.stringify(error.response.data));
+    }
+    return null;
+  }
+}
+
 // Configurable limits to prevent API overload
 const MAX_CATALOGS = parseInt(process.env.MAX_CATALOGS || '10'); // Limit catalogs to avoid rate limits - set low for large environments
 const MAX_SCHEMAS_PER_CATALOG = parseInt(process.env.MAX_SCHEMAS_PER_CATALOG || '5'); // Limit schemas per catalog to prevent timeouts
@@ -69,22 +122,28 @@ async function rateLimitedRequest(fn, retries = 3) {
 }
 
 // Create Databricks API client for a specific environment
-// Uses the user's access token from X-Forwarded-Access-Token header (Databricks Apps)
-// Falls back to PAT from config if no user token is available
-export const createDatabricksClient = (envId, userToken = null) => {
+// Priority: 1) Service Principal OAuth, 2) User token, 3) PAT from config
+export const createDatabricksClient = async (envId, userToken = null) => {
   const env = getEnvironment(envId);
   
   if (!env) {
     throw new Error(`Environment ${envId} not found or not enabled`);
   }
   
-  // Priority: 1) Provided userToken, 2) Current user token from middleware, 3) PAT from config
-  const token = userToken || currentUserToken || env.token;
+  // Try Service Principal first (most reliable in Databricks Apps)
+  let token = await getServicePrincipalToken(env.host);
+  let tokenSource = 'service-principal';
+  
+  // Fallback to user token if SP not available
+  if (!token) {
+    token = userToken || currentUserToken || env.token;
+    tokenSource = userToken ? 'provided' : currentUserToken ? 'middleware' : env.token ? 'config' : 'none';
+  }
   
   // Debug logging
   console.log(`🔧 Creating Databricks client for env: ${envId}`);
   console.log(`   Host: ${env.host}`);
-  console.log(`   Token source: ${userToken ? 'provided' : currentUserToken ? 'middleware' : env.token ? 'config' : 'none'}`);
+  console.log(`   Token source: ${tokenSource}`);
   console.log(`   Token preview: ${token ? token.substring(0, 20) + '...' : 'null'}`);
   
   if (!token) {
@@ -129,7 +188,7 @@ export const unityCatalog = {
       return cached.data;
     }
     
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await rateLimitedRequest(() => 
       client.get('/api/2.1/unity-catalog/catalogs')
     );
@@ -153,7 +212,7 @@ export const unityCatalog = {
       return cached.data;
     }
     
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await rateLimitedRequest(() =>
       client.get('/api/2.1/unity-catalog/schemas', {
         params: { catalog_name: catalogName }
@@ -179,7 +238,7 @@ export const unityCatalog = {
       return cached.data;
     }
     
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await rateLimitedRequest(() =>
       client.get('/api/2.1/unity-catalog/tables', {
         params: { 
@@ -204,7 +263,7 @@ export const unityCatalog = {
     }
     
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const response = await rateLimitedRequest(() =>
         client.get('/api/2.1/unity-catalog/volumes', {
           params: { 
@@ -233,7 +292,7 @@ export const unityCatalog = {
     }
     
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const response = await rateLimitedRequest(() =>
         client.get('/api/2.1/unity-catalog/functions', {
           params: { 
@@ -262,7 +321,7 @@ export const unityCatalog = {
     }
     
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const response = await rateLimitedRequest(() =>
         client.get('/api/2.1/unity-catalog/models', {
           params: { 
@@ -291,7 +350,7 @@ export const unityCatalog = {
     }
     
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const fullTableName = `${catalogName}.${schemaName}.${tableName}`;
       const response = await rateLimitedRequest(() =>
         client.get(`/api/2.1/unity-catalog/tables/${fullTableName}`)
@@ -308,14 +367,14 @@ export const unityCatalog = {
   
   // Get table details
   async getTable(envId, fullTableName, userToken = null) {
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await client.get(`/api/2.1/unity-catalog/tables/${fullTableName}`);
     return response.data;
   },
   
   // Get table tags
   async getTags(envId, fullTableName, userToken = null) {
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     try {
       const response = await client.get(`/api/2.1/unity-catalog/tables/${fullTableName}`);
       return response.data.properties || {};
@@ -327,7 +386,7 @@ export const unityCatalog = {
   
   // Set table tags
   async setTags(envId, fullTableName, tags, userToken = null) {
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await client.patch(`/api/2.1/unity-catalog/tables/${fullTableName}`, {
       properties: tags
     });
@@ -339,7 +398,7 @@ export const unityCatalog = {
 export const deltaSharing = {
   // List shares
   async listShares(envId, userToken = null) {
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await client.get('/api/2.1/unity-catalog/shares');
     return response.data.shares || [];
   },
@@ -353,7 +412,7 @@ export const deltaSharing = {
       return cached.data;
     }
     
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     // include_shared_data parameter is needed to get the objects array
     const params = includeSharedData ? { include_shared_data: true } : {};
     const response = await client.get(`/api/2.1/unity-catalog/shares/${shareName}`, { params });
@@ -393,7 +452,7 @@ export const deltaSharing = {
   // List all tables/objects in a share
   async listShareObjects(envId, shareName, userToken = null) {
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       // Try the shares permissions endpoint which includes granted objects
       const response = await client.get(`/api/2.1/unity-catalog/shares/${shareName}/permissions`);
       return response.data;
@@ -406,7 +465,7 @@ export const deltaSharing = {
   // List tables granted to a share (what tables are IN the share)
   async listTablesInShare(envId, shareName, userToken = null) {
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       // Try different possible endpoints
       
       // Option 1: Try grants endpoint
@@ -427,7 +486,7 @@ export const deltaSharing = {
   // List all providers (for discovering available data sharing providers)
   async listProviders(envId, userToken = null) {
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const response = await client.get('/api/2.1/data-sharing/providers');
       console.log(`📊 Found ${response.data.providers?.length || 0} data sharing providers`);
       return response.data.providers || [];
@@ -440,7 +499,7 @@ export const deltaSharing = {
   // Get share details via Delta Sharing provider endpoint (for identifying underlying data)
   async getShareFromProvider(envId, providerName, shareName, userToken = null) {
     try {
-      const client = createDatabricksClient(envId, userToken);
+      const client = await createDatabricksClient(envId, userToken);
       const response = await client.get(`/api/2.1/data-sharing/providers/${providerName}/shares/${shareName}`);
       console.log(`📊 Share ${shareName} from provider ${providerName}:`, response.data);
       return response.data;
@@ -483,7 +542,7 @@ export const deltaSharing = {
   // List all tables in all shares (using Unity Catalog tables API)
   async listShareSchemas(envId, shareName, userToken = null) {
     // For Delta Sharing, we need to use the tables API and group by schema
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await client.get('/api/2.1/unity-catalog/tables', {
       params: {
         max_results: 1000
@@ -505,7 +564,7 @@ export const deltaSharing = {
   
   // List tables in a share schema
   async listShareTables(envId, shareName, schemaName, userToken = null) {
-    const client = createDatabricksClient(envId, userToken);
+    const client = await createDatabricksClient(envId, userToken);
     const response = await client.get('/api/2.1/unity-catalog/tables', {
       params: {
         catalog_name: shareName,
