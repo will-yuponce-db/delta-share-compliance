@@ -1,0 +1,26 @@
+{
+  "environments": {
+    "prod": {
+      "name": "Production",
+      "workspaceUrl": "https://e2-demo-field-eng.cloud.databricks.com/",
+      "token": "",
+      "enabled": true
+    },
+    "staging": {
+      "name": "Staging",
+      "workspaceUrl": "",
+      "token": "",
+      "enabled": false
+    },
+    "partner": {
+      "name": "Partner Workspace",
+      "workspaceUrl": "",
+      "token": "",
+      "enabled": false
+    }
+  },
+  "settings": {
+    "useRealAPIs": true,
+    "cacheTimeout": 300000
+  }
+}
