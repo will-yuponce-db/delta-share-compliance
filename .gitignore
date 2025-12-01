@@ -3,9 +3,9 @@ node_modules/
 package-lock.json
 
 # Build outputs
-dist/
 build/
 .vite/
+# Keep frontend/dist/ for Databricks Apps deployment (pre-built)
 
 # Environment variables
 .env
