@@ -18,3 +18,4 @@ export const clearRegistry = () => {
 export const getProcessedShares = () => {
   return Array.from(processedShares);
 };
+

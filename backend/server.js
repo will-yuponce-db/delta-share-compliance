@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import agreementsRouter from './routes/agreements.js';
 import deltaSharingRouter from './routes/deltaSharing.js';
 import validationRouter from './routes/validation.js';
@@ -10,8 +12,11 @@ import setupRouter from './routes/setup.js';
 import { setUserToken } from './services/databricksClient.js';
 import { getUserToken, getUserEmail } from './config/databricks.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(cors());
@@ -69,8 +74,12 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
+// Serve static files from the frontend build (production)
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+// API info endpoint (for debugging)
+app.get('/api', (req, res) => {
   res.json({
     message: 'Delta Sharing Compliance API',
     version: '1.0.0',
@@ -87,6 +96,15 @@ app.get('/', (req, res) => {
       setup: '/api/setup',
     },
   });
+});
+
+// SPA fallback - serve index.html for all non-API routes (must be after API routes)
+app.get('*', (req, res, next) => {
+  // Skip if this is an API request
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
 });
 
 // Error handling

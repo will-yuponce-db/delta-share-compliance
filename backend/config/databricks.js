@@ -69,3 +69,4 @@ export const getUserEmail = (req) => {
 };
 
 export default config;
+
